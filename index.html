@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>Генератор Текстурных Шрифтов</title>
+    <style>
+        :root {
+            --primary-color: #2196F3;
+            --background-color: #ffffff;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+        }
+
+        /* Динамическая загрузка шрифтов */
+        #fontLoader {
+            position: absolute;
+            width: 0;
+            height: 0;
+            overflow: hidden;
+            visibility: hidden;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background: var(--background-color);
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .description {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .controls-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-group {
+            background: #f5f5f5;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .control-group h2 {
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .scale-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .scale-controls input[type="number"] {
+            width: 100%;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        select.font-select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .font-upload {
+            margin-top: 0.5rem;
+        }
+
+        .upload-label {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .upload-label:hover {
+            background: #1976D2;
+        }
+
+        .upload-label input[type="file"] {
+            display: none;
+        }
+
+        select.font-select option {
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+
+        input[type="radio"],
+        input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .preview-container {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAC1JREFUeNpi/P//PwMIMALxfyAGsRnR2YxwCTQJJnQJZhTNyBJMWCQYAAIMAK7iBRABIrWDAAAAAElFTkSuQmCC');
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin: 1rem auto;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            background: var(--primary-color);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #1976D2;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: monospace;
+            margin-top: 1rem;
+        }
+
+        .error {
+            color: #f44336;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .controls-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Генератор Текстурных Шрифтов</h1>
+    </div>
+
+    <div class="description">
+        <p>Инструмент для создания текстурных шрифтов для игр и веб-приложений. 
+           Поддерживает создание дистанционных полей и различные форматы экспорта.</p>
+    </div>
+
+    <div class="controls-container">
+        <div class="control-group">
+            <h2>Настройки шрифта</h2>
+            <div class="form-group">
+                <label>Название шрифта:</label>
+                <select id="fontName" class="font-select">
+                    <option value="Arial">Arial</option>
+                </select>
+                <div class="font-upload">
+                    <label class="upload-label">Добавить шрифты:
+                        <input type="file" id="fontUpload" accept=".ttf,.woff,.woff2" multiple>
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Размер шрифта:</label>
+                <input type="number" id="fontSize" value="70" min="1" max="256">
+            </div>
+            <div class="form-group">
+                <label>Масштабирование:</label>
+                <div class="scale-controls">
+                    <div>
+                        <label>Ширина (%):</label>
+                        <input type="number" id="fontScaleX" value="100" min="1" max="500">
+                    </div>
+                    <div>
+                        <label>Высота (%):</label>
+                        <input type="number" id="fontScaleY" value="100" min="1" max="500">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Стиль:</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="fontBold"> Жирный</label>
+                    <label><input type="checkbox" id="fontItalic"> Курсив</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h2>Параметры текстуры</h2>
+            <div class="form-group">
+                <label>Разрешение:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="resolution" id="resolutionSmallest" checked> Минимальное</label>
+                    <label><input type="radio" name="resolution" id="resolutionPowerOf2"> Степень двойки</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Тип отображения:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="displayType" id="displayTypeNormal"> Обычный</label>
+                    <label><input type="radio" name="displayType" id="displayTypeDistanceField" checked> Дистанционное поле</label>
+                </div>
+
+                <div id="normalOptions" style="display: none;">
+                    <div class="form-group">
+                        <label>Фон:</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="normalBackground" id="normalBackgroundTransparent"> Прозрачный</label>
+                            <label><input type="radio" name="normalBackground" id="normalBackgroundBlack" checked> Чёрный</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="distanceFieldOptions">
+                    <div class="form-group">
+                        <label>Falloff:</label>
+                        <input type="number" id="distanceFieldFalloff" value="5" min="1" max="32">
+                    </div>
+                    <div class="form-group">
+                        <label>Фон:</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="distanceFieldBackground" id="distanceFieldBackgroundTransparent"> Прозрачный</label>
+                            <label><input type="radio" name="distanceFieldBackground" id="distanceFieldBackgroundBlack" checked> Чёрный</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h2>Символы</h2>
+            <div class="form-group">
+                <div class="radio-group">
+                    <label><input type="radio" name="characters" id="charactersASCII"> ASCII</label>
+                    <label><input type="radio" name="characters" id="charactersCustom" checked> Свой набор</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <input type="text" id="customCharacters" value=" !&quot;#$%&amp;'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя">
+            </div>
+        </div>
+    </div>
+
+    <div class="button-group">
+        <button id="generateBtn">Сгенерировать</button>
+        <button id="downloadBtn" disabled>Скачать текстуру</button>
+    </div>
+
+    <div class="preview-container">
+        <canvas id="previewCanvas"></canvas>
+    </div>
+
+    <textarea id="outputData" readonly placeholder="Здесь появится код..."></textarea>
+
+    <div id="fontLoader"></div>
+    <script src="js/generator.js"></script>
+</body>
+</html> 
